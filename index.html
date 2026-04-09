@@ -1,3 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Gemini Chat</title>
+  <style>
+    body {
+      background: #111;
+      color: white;
+      font-family: Arial;
+      text-align: center;
+    }
+    #chat {
+      width: 80%;
+      height: 300px;
+      margin: 20px auto;
+      border: 1px solid #444;
+      overflow-y: auto;
+      padding: 10px;
+      text-align: left;
+    }
+    input {
+      width: 60%;
+      padding: 10px;
+    }
+    button {
+      padding: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🤖 Gemini Chat</h1>
+
+<div id="chat"></div>
+
+<input id="input" placeholder="Напиши сообщение..." />
+<button onclick="send()">Отправить</button>
+
+<script>
+const API_KEY = "AIzaSyC8a2P5Ltqvmsks5GI5lhBfawZY9F9kziA";
+
 async function send() {
   const input = document.getElementById("input");
   const chat = document.getElementById("chat");
@@ -30,15 +73,17 @@ async function send() {
     const data = await response.json();
     console.log("FULL RESPONSE:", data);
 
+    // если ошибка от API
     if (data.error) {
-      chat.innerHTML += `<div style="color:red">Ошибка API: ${data.error.message}</div>`;
+      chat.innerHTML += `<div style="color:red">❌ ${data.error.message}</div>`;
       return;
     }
 
+    // норм ответ
     const botText = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!botText) {
-      chat.innerHTML += `<div style="color:red">Нет ответа от модели</div>`;
+      chat.innerHTML += `<div style="color:red">❌ Нет ответа от модели</div>`;
       return;
     }
 
@@ -46,6 +91,10 @@ async function send() {
     chat.scrollTop = chat.scrollHeight;
 
   } catch (err) {
-    chat.innerHTML += "<div style='color:red'>Ошибка: " + err + "</div>";
+    chat.innerHTML += "<div style='color:red'>❌ Ошибка: " + err + "</div>";
   }
 }
+</script>
+
+</body>
+</html>
