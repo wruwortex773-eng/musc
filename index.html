@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Giveaway Manager</title>
+  <title>Gemini Chat</title>
   <style>
     body {
       background: #111;
@@ -10,129 +10,76 @@
       font-family: Arial;
       text-align: center;
     }
-    textarea {
+    #chat {
       width: 80%;
-      height: 100px;
-      margin: 10px;
+      height: 300px;
+      margin: 20px auto;
+      border: 1px solid #444;
+      overflow-y: auto;
+      padding: 10px;
+      text-align: left;
+    }
+    input {
+      width: 60%;
+      padding: 10px;
     }
     button {
-      padding: 10px 20px;
-      margin: 5px;
-      cursor: pointer;
-    }
-    .card {
-      border: 1px solid #444;
       padding: 10px;
-      margin: 10px;
     }
   </style>
 </head>
 <body>
 
-<h1>🎁 Giveaway Manager</h1>
+<h1>🤖 Gemini Chat</h1>
 
-<textarea id="inputText" placeholder="Вставь текст розыгрыша"></textarea><br>
-<button onclick="addGiveaway()">СОХРАНИТЬ</button>
+<div id="chat"></div>
 
-<h2>Активные</h2>
-<div id="active"></div>
-
-<h2>Завершённые</h2>
-<div id="ended"></div>
+<input id="input" placeholder="Напиши сообщение..." />
+<button onclick="send()">Отправить</button>
 
 <script>
 const API_KEY = "AIzaSyC8a2P5Ltqvmsks5GI5lhBfawZY9F9kziA";
 
-async function parseGiveaway(text) {
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`,
-    {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: `
-Извлеки:
-- prize (приз)
-- endTime (ISO формат)
+async function send() {
+  const input = document.getElementById("input");
+  const chat = document.getElementById("chat");
 
-Ответ только JSON:
-{"prize":"","endTime":""}
+  const userText = input.value;
+  if (!userText) return;
 
-Текст:
-${text}
-            `
-          }]
-        }]
-      })
-    }
-  );
-
-  const data = await response.json();
-  const textOut = data.candidates[0].content.parts[0].text;
+  chat.innerHTML += "<div>🧑: " + userText + "</div>";
+  input.value = "";
 
   try {
-    return JSON.parse(textOut);
-  } catch {
-    alert("Ошибка AI:\n" + textOut);
-    return null;
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [{ text: userText }]
+            }
+          ]
+        })
+      }
+    );
+
+    const data = await response.json();
+    console.log(data);
+
+    const botText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Ошибка ответа";
+
+    chat.innerHTML += "<div>🤖: " + botText + "</div>";
+    chat.scrollTop = chat.scrollHeight;
+
+  } catch (err) {
+    chat.innerHTML += "<div style='color:red'>Ошибка: " + err + "</div>";
   }
 }
-
-function save(data) {
-  localStorage.setItem("giveaways", JSON.stringify(data));
-}
-
-function load() {
-  return JSON.parse(localStorage.getItem("giveaways") || "[]");
-}
-
-async function addGiveaway() {
-  const text = document.getElementById("inputText").value;
-  const parsed = await parseGiveaway(text);
-
-  if (!parsed) return;
-
-  const list = load();
-  list.push(parsed);
-  save(list);
-
-  render();
-}
-
-function render() {
-  const list = load();
-  const now = new Date();
-
-  document.getElementById("active").innerHTML = "";
-  document.getElementById("ended").innerHTML = "";
-
-  list.forEach(g => {
-    const end = new Date(g.endTime);
-
-    const diff = end - now;
-    const hours = Math.floor(diff / 1000 / 60 / 60);
-    const minutes = Math.floor((diff / 1000 / 60) % 60);
-
-    const el = document.createElement("div");
-    el.className = "card";
-
-    el.innerHTML = `
-      <b>${g.prize}</b><br>
-      До конца: ${hours}ч ${minutes}м
-    `;
-
-    if (diff > 0) {
-      document.getElementById("active").appendChild(el);
-    } else {
-      document.getElementById("ended").appendChild(el);
-    }
-  });
-}
-
-setInterval(render, 60000);
-render();
 </script>
 
 </body>
